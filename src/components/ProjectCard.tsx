@@ -1,6 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { X } from "lucide-react";
+import { X, User } from "lucide-react";
 import { useState } from "react";
 
 interface Role {
@@ -14,12 +14,18 @@ interface Employee {
   name: string;
 }
 
+interface Assignment {
+  employeeId: string;
+  employeeName: string;
+  months: string[];
+}
+
 interface ProjectCardProps {
   name: string;
   scenario: string;
   roles: Role[];
   months: string[];
-  assignments: Record<string, string>;
+  assignments: Record<string, Assignment>;
   employees: Employee[];
   onAssign: (roleId: string, employeeId: string, employeeName: string, projectName: string, roleType: string) => void;
   onUnassign: (roleId: string, employeeName: string) => void;
@@ -62,9 +68,13 @@ export const ProjectCard = ({ name, scenario, roles, months, assignments, employ
     }
   };
 
-  const getAssignedEmployee = (roleId: string) => {
-    const employeeId = assignments[roleId];
-    return employees.find(e => e.id === employeeId);
+  const getAssignment = (roleId: string): Assignment | undefined => {
+    return assignments[roleId];
+  };
+
+  const isMonthAssigned = (roleId: string, month: string): boolean => {
+    const assignment = assignments[roleId];
+    return assignment ? assignment.months.includes(month) : false;
   };
 
   return (
@@ -76,7 +86,7 @@ export const ProjectCard = ({ name, scenario, roles, months, assignments, employ
 
       <div className="space-y-3">
         {roles.map((role) => {
-          const assignedEmployee = getAssignedEmployee(role.id);
+          const assignment = getAssignment(role.id);
           const isDragOver = dragOverRole === role.id;
           
           return (
@@ -93,11 +103,13 @@ export const ProjectCard = ({ name, scenario, roles, months, assignments, employ
                 <Badge variant="outline" className={`${getRoleBadgeColor(role.type)} w-16 justify-center`}>
                   {role.type}
                 </Badge>
-                {assignedEmployee && (
+                {assignment && (
                   <div className="flex items-center gap-1 text-xs bg-secondary rounded px-2 py-1 group relative">
-                    <span className="font-medium truncate max-w-[60px]">{assignedEmployee.name}</span>
+                    <span className="font-medium truncate max-w-[60px]" title={assignment.employeeName}>
+                      {assignment.employeeName}
+                    </span>
                     <button
-                      onClick={() => onUnassign(role.id, assignedEmployee.name)}
+                      onClick={() => onUnassign(role.id, assignment.employeeName)}
                       className="opacity-0 group-hover:opacity-100 transition-opacity"
                     >
                       <X className="w-3 h-3 text-muted-foreground hover:text-destructive" />
@@ -106,17 +118,34 @@ export const ProjectCard = ({ name, scenario, roles, months, assignments, employ
                 )}
               </div>
               <div className="flex-1 flex gap-1">
-                {role.months.map((monthData, idx) => (
-                  <div
-                    key={idx}
-                    className={`flex-1 h-8 rounded border transition-all ${
-                      monthData.assigned
-                        ? "bg-primary/20 border-primary/40 hover:bg-primary/30"
-                        : "bg-muted/30 border-border hover:bg-muted/50"
-                    } cursor-pointer`}
-                    title={`${monthData.month} - ${monthData.assigned ? "Assigned" : "Available"}`}
-                  />
-                ))}
+                {role.months.map((monthData, idx) => {
+                  const monthName = months[idx];
+                  const isAssignedThisMonth = isMonthAssigned(role.id, monthName);
+                  
+                  return (
+                    <div
+                      key={idx}
+                      className={`flex-1 h-8 rounded border transition-all relative group/cell ${
+                        isAssignedThisMonth
+                          ? "bg-primary border-primary hover:bg-primary/90"
+                          : monthData.assigned
+                          ? "bg-primary/20 border-primary/40 hover:bg-primary/30"
+                          : "bg-muted/30 border-border hover:bg-muted/50"
+                      } cursor-pointer overflow-hidden`}
+                      title={
+                        isAssignedThisMonth
+                          ? `${monthData.month} - ${assignment?.employeeName}`
+                          : `${monthData.month} - ${monthData.assigned ? "Assigned" : "Available"}`
+                      }
+                    >
+                      {isAssignedThisMonth && (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <User className="w-4 h-4 text-primary-foreground" />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           );

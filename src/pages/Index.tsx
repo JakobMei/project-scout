@@ -1,14 +1,28 @@
 import { ProjectCard } from "@/components/ProjectCard";
 import { EmployeeCard } from "@/components/EmployeeCard";
+import { AssignmentDialog } from "@/components/AssignmentDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Users, Calendar, Search, Plus } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
+interface Assignment {
+  employeeId: string;
+  employeeName: string;
+  months: string[];
+}
+
 const Index = () => {
   const months = ["Jan", "Feb", "Mar"];
-  const [assignments, setAssignments] = useState<Record<string, string>>({});
+  const [assignments, setAssignments] = useState<Record<string, Assignment>>({});
+  const [pendingAssignment, setPendingAssignment] = useState<{
+    roleId: string;
+    employeeId: string;
+    employeeName: string;
+    projectName: string;
+    roleType: string;
+  } | null>(null);
 
   const projects = [
     {
@@ -134,13 +148,38 @@ const Index = () => {
     },
   ];
 
-  const handleAssignment = (roleId: string, employeeId: string, employeeName: string, projectName: string, roleType: string) => {
-    setAssignments(prev => ({ ...prev, [roleId]: employeeId }));
-    toast.success(`${employeeName} assigned to ${projectName} (${roleType})`);
+  const handleStartAssignment = (
+    roleId: string,
+    employeeId: string,
+    employeeName: string,
+    projectName: string,
+    roleType: string
+  ) => {
+    setPendingAssignment({ roleId, employeeId, employeeName, projectName, roleType });
+  };
+
+  const handleConfirmAssignment = (selectedMonths: string[]) => {
+    if (!pendingAssignment) return;
+
+    const { roleId, employeeId, employeeName, projectName, roleType } = pendingAssignment;
+    
+    setAssignments((prev) => ({
+      ...prev,
+      [roleId]: {
+        employeeId,
+        employeeName,
+        months: selectedMonths,
+      },
+    }));
+
+    toast.success(
+      `${employeeName} assigned to ${projectName} (${roleType}) for ${selectedMonths.join(", ")}`
+    );
+    setPendingAssignment(null);
   };
 
   const handleUnassign = (roleId: string, employeeName: string) => {
-    setAssignments(prev => {
+    setAssignments((prev) => {
       const newAssignments = { ...prev };
       delete newAssignments[roleId];
       return newAssignments;
@@ -150,6 +189,16 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <AssignmentDialog
+        open={!!pendingAssignment}
+        onClose={() => setPendingAssignment(null)}
+        employeeName={pendingAssignment?.employeeName || ""}
+        projectName={pendingAssignment?.projectName || ""}
+        roleType={pendingAssignment?.roleType || ""}
+        months={months}
+        onConfirm={handleConfirmAssignment}
+      />
+
       {/* Header */}
       <header className="bg-card border-b border-border sticky top-0 z-10 shadow-sm">
         <div className="container mx-auto px-4 py-4">
@@ -202,7 +251,7 @@ const Index = () => {
                   months={months}
                   assignments={assignments}
                   employees={employees}
-                  onAssign={handleAssignment}
+                  onAssign={handleStartAssignment}
                   onUnassign={handleUnassign}
                 />
               ))}
