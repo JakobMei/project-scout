@@ -3,9 +3,12 @@ import { EmployeeCard } from "@/components/EmployeeCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Users, Calendar, Search, Plus } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
 
 const Index = () => {
   const months = ["Jan", "Feb", "Mar"];
+  const [assignments, setAssignments] = useState<Record<string, string>>({});
 
   const projects = [
     {
@@ -131,6 +134,20 @@ const Index = () => {
     },
   ];
 
+  const handleAssignment = (roleId: string, employeeId: string, employeeName: string, projectName: string, roleType: string) => {
+    setAssignments(prev => ({ ...prev, [roleId]: employeeId }));
+    toast.success(`${employeeName} assigned to ${projectName} (${roleType})`);
+  };
+
+  const handleUnassign = (roleId: string, employeeName: string) => {
+    setAssignments(prev => {
+      const newAssignments = { ...prev };
+      delete newAssignments[roleId];
+      return newAssignments;
+    });
+    toast.info(`${employeeName} removed from assignment`);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -183,6 +200,10 @@ const Index = () => {
                   scenario={project.scenario}
                   roles={project.roles}
                   months={months}
+                  assignments={assignments}
+                  employees={employees}
+                  onAssign={handleAssignment}
+                  onUnassign={handleUnassign}
                 />
               ))}
             </div>
@@ -207,6 +228,7 @@ const Index = () => {
               {employees.map((employee) => (
                 <EmployeeCard
                   key={employee.id}
+                  id={employee.id}
                   name={employee.name}
                   role={employee.role}
                   availability={employee.availability}

@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { User } from "lucide-react";
 
 interface EmployeeCardProps {
+  id: string;
   name: string;
   role: string;
   availability: number;
@@ -10,7 +11,21 @@ interface EmployeeCardProps {
   skills: string[];
 }
 
-export const EmployeeCard = ({ name, role, availability, status, skills }: EmployeeCardProps) => {
+export const EmployeeCard = ({ id, name, role, availability, status, skills }: EmployeeCardProps) => {
+  const handleDragStart = (e: React.DragEvent) => {
+    e.dataTransfer.setData("employeeId", id);
+    e.dataTransfer.setData("employeeName", name);
+    e.dataTransfer.effectAllowed = "copy";
+    
+    // Add visual feedback
+    const target = e.currentTarget as HTMLElement;
+    target.style.opacity = "0.5";
+  };
+
+  const handleDragEnd = (e: React.DragEvent) => {
+    const target = e.currentTarget as HTMLElement;
+    target.style.opacity = "1";
+  };
   const getStatusColor = () => {
     switch (status) {
       case "free":
@@ -44,7 +59,12 @@ export const EmployeeCard = ({ name, role, availability, status, skills }: Emplo
   };
 
   return (
-    <Card className="p-4 hover:shadow-md transition-all cursor-pointer hover:border-primary/40">
+    <Card 
+      className="p-4 hover:shadow-md transition-all cursor-move hover:border-primary/40 active:cursor-grabbing"
+      draggable
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+    >
       <div className="flex items-start gap-3">
         <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
           <User className="w-5 h-5 text-primary" />
